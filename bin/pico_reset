@@ -1,0 +1,21 @@
+#!/bin/env python3
+import argparse
+import subprocess
+
+def main():
+    parser = argparse.ArgumentParser(description='Reset a Pico')
+    parser.add_argument("-b", "--board", default='pico',
+                        choices=['pico', 'pico_w', 'pico2', 'pico2_w'],
+                        help="Specify target board type (default: pico)")
+    args = parser.parse_args()
+
+    if (args.board == "pico") or (args.board == "pico_w"):
+        chip = "rp2040"
+    else:
+        chip = "rp2350"
+
+    subprocess.run(["openocd", "-f", "interface/cmsis-dap.cfg", "-f",
+                    f"target/{chip}.cfg", "-c", "init; reset; exit"])
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# Setup Raspberry Pi Pico development environment on Ubuntu Linux
+#
+# Original Author: John Fredine
+# Original Date: March 18, 2025
+#
+
+if [[ $USER != "root" ]]; then
+    echo "!Error: Script must run as \"sudo $0\""
+    exit 1
+fi
+
+mkdir -p /usr/src
+
+# get latest list of available tools
+apt update
+
+# install helpful tools
+apt-get install -y picocom tmux
+
+# install arm toolchain dependencies
+apt-get install -y build-essential curl
+
+# install ARM Toolchain
+cd /usr/src
+arm_url="https://developer.arm.com"
+version=$(curl -s ${arm_url}/downloads/-/arm-gnu-toolchain-downloads |\
+              grep -Po '<h4>Version \K.+(?=</h4>)')
+toolchain_url="${arm_url}/-/media/Files/downloads/gnu"
+toolchain_url+="/${version}/binrel/arm-gnu-toolchain"
+toolchain_url+="-${version}-x86_64-arm-none-eabi.tar.xz"
+curl -Lo gcc-arm-none-eabi.tar.xz $toolchain_url
+mkdir -p /opt/gcc-arm-none-eabi
+tar xf gcc-arm-none-eabi.tar.xz --strip-components=1 -C /opt/gcc-arm-none-eabi
+
+# install raspberry pi pico SDK dependencies
+apt-get install -y git
+
+# install raspberry pi pico SDK
+rm -rf /opt/pico-sdk
+git clone --recurse-submodules -b 2.1.1 \
+    https://github.com/raspberrypi/pico-sdk.git /opt/pico-sdk
+export PICO_SDK_PATH=/opt/pico-sdk
+
+# install picotool dependencies
+apt-get install -y git cmake g++
+
+# install picotool
+cd /usr/src
+rm -rf picotool
+git clone --recurse-submodules -b 2.1.1 \
+    https://github.com/raspberrypi/picotool.git
+mkdir -p picotool/build
+cd picotool/build
+cmake ..
+make
+make install
+
+# install pico examples
+cd /usr/src
+rm -rf pico-examples
+git clone -b sdk-2.1.1 https://github.com/raspberrypi/pico-examples.git
+
+# install build time components for pico
+apt update && apt-get install -y python3
+
+echo "Remember to:"
+echo "    install and use usbipd in Windows to enable use of USB devices in WSL"
+echo "    export PATH=\$PATH:/opt/gcc-arm-none-eabi/bin"
+echo "    export PICO_SDK_PATH=/opt/pico-sdk"

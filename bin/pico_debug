@@ -1,0 +1,64 @@
+#!/bin/env python3
+import argparse
+import re
+import os
+import subprocess
+import sys
+import time
+import tempfile
+import signal
+
+GDB = "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gdb"
+
+def main():
+    parser = argparse.ArgumentParser(description='Start debugging a raspbery pi pico')
+    parser.add_argument("file", help="File (ELF format) being debugged")
+    parser.add_argument("-b", "--board", default='pico',
+                        choices=['pico', 'pico_w', 'pico2', 'pico2_w'],
+                        help="Specify target board type (default: pico)")
+    args = parser.parse_args()
+
+    if (args.board == "pico") or (args.board == "pico_w"):
+        chip = "rp2040"
+    else:
+        chip = "rp2350"
+
+    p = subprocess.Popen(["openocd", "-s",  "tcl",
+                          "-f", "interface/cmsis-dap.cfg",
+                          "-f", f"target/{chip}.cfg",
+                          "-c", "adapter speed 5000"], text=True,
+                          start_new_session=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    time.sleep(0.5)
+    if p.poll() is not None:
+        sys.stdout.write(p.stdout.read())
+        raise Exception("Unable to start openocd")
+
+    port = None
+    port_re = re.compile(r".*Listening on port (\d+) for gdb connections")
+    for line in p.stdout:
+        match = port_re.match(line)
+        if match is not None:
+            print(f"Port is {match.group(1)}")
+            port = int(match.group(1))
+            break
+
+    if (port is None):
+        raise Exception("Unable to determine port")
+
+    f = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8',
+                                    delete=False, delete_on_close=False)
+    fn = f.name
+    f.write(f"target remote localhost:{port}\n")
+    f.write(f"monitor reset init\n")
+    f.close()
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    subprocess.run([GDB, "--command", fn, args.file])
+
+    p.kill();
+    p.wait();
+    os.unlink(fn)
+                   
+if __name__ == "__main__":
+    main()

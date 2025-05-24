@@ -1,0 +1,28 @@
+#!/bin/env python3
+import argparse
+import os
+import subprocess
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Load a program into a Pico')
+    parser.add_argument("file", help="File (ELF format) being debugged")
+    parser.add_argument("-b", "--board", default='pico',
+                        choices=['pico', 'pico_w', 'pico2', 'pico2_w'],
+                        help="Specify target board type (default: pico)")
+    args = parser.parse_args()
+
+    if (args.board == "pico") or (args.board == "pico_w"):
+        chip = "rp2040"
+    else:
+        chip = "rp2350"
+
+    if not os.path.exists(args.file):
+        raise Exception(f"{args.file} does not exist")
+
+    subprocess.run(["openocd", "-f", "interface/cmsis-dap.cfg", "-f",
+                    f"target/{chip}.cfg", "-c", "adapter speed 5000",
+                    "-c", f"program {args.file} verify reset exit"])
+
+if __name__ == "__main__":
+    main()

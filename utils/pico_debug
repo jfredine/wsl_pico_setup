@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# Setup Raspberry Pi Pico debug environment on Ubuntu Linux
+#
+# Original Author: John Fredine
+# Original Date: March 18, 2025
+#
+
+if [[ $USER != "root" ]]; then
+    echo "!Error: Script must run as \"sudo $0\""
+    exit 1
+fi
+
+if [[ "X$(which arm-none-eabi-gcc)" == "X" ]]; then
+    export PATH=$PATH:/opt/gcc-arm-none-eabi/bin
+fi
+if [[ "X$(which arm-none-eabi-gcc)" == "X" ]]; then
+    echo "!Error: arm-non-eabi-gcc not found in the environment"
+fi
+
+if [[ "X$PICO_SDK_PATH" == "X" ]]; then
+    if [[ -e "/opt/pico-sdk/pico_sdk_init.cmake" ]]; then
+	export PICO_SDK_PATH=/opt/pico-sdk
+	echo "+Info: Setting PICO_SDK_PATH to $PICO_SDK_PATH"
+    else
+	echo "!Error: PICO_SDK_PATH not set"
+	exit 1
+    fi
+fi
+
+mkdir -p /usr/src
+
+# get latest list of available tools
+apt update
+
+# install openocd dependencies
+apt-get install -y git libtool pkg-config make libusb-1.0.0-dev
+
+# install openocd
+cd /usr/src
+rm -rf openocd
+git clone https://github.com/raspberrypi/openocd.git
+cd openocd
+git checkout
+./bootstrap
+./configure --disable-werror
+make -j$(nproc)
+make install
+
+# update rules to allow use of openocd without root access
+cp contrib/60-openocd.rules /etc/udev/rules.d
+udevadm control --reload
+usermod -a -G plugdev $(whoami)
+
+# clone and build the debugprobe firmware
+cd /usr/src
+rm -rf debugprobe
+git clone -b debugprobe-v2.2.2 https://github.com/raspberrypi/debugprobe.git
+cd debugprobe
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake -DDEBUG_ON_PICO=ON ..
+gmake -j$(nproc)
+
+echo "Remember to:"
+echo "    install and use usbipd in Windows to enable use of USB devices in WSL"
+echo "    log out and log in to pick up group changes"
