@@ -48,12 +48,13 @@ From within the WSL environment execute the following commands:
 - `git clone https://github.com/jfredine/wsl_pico_setup`
 
 ### Install the Raspberry Pi Pico SDK
-To do C/C++ development for the Raspberry Pi Pico a minim of three tool suites
+To do C/C++ development for the Raspberry Pi Pico a minimum of four tool suites
 are needed:
 
 1. The [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 2. The [Raspberry Pi Pico SDK](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
-2. The [Raspberry Pi picotool program](https://github.com/raspberrypi/picotool.git)
+3. The [Raspberry Pi picotool program](https://github.com/raspberrypi/picotool.git)
+4. [CMake](https://cmake.org)
 
 Additionally it is a good idea to download the
 [Raspberry Pi Pico examples](https://github.com/raspberrypi/pico-examples.git)
@@ -71,7 +72,7 @@ command sequence might look like:
 - `mkdir build`
 - `cd build`
 - `export PICO_SDK_PATH=/opt/pico-sdk`
-- `cmake -DPICO_BOARD=pico /usr/src/pico-examples  # adjust board type to pico2, pico_2, or pico2_w if necessary`
+- `cmake -DPICO_BOARD=pico /usr/src/pico-examples  # adjust board type to pico_w, pico2, or pico2_w if necessary`
 
 Any of the examples can now be compiled by changing to the example directory
 within the build area and running Make.  The simplest example is blink and it 
@@ -95,18 +96,24 @@ file system and then reboot the Pico.
 
 ### Monitor Serial Communication
 #### USB Device Sharing
-USB devices such as the Raspberry Pi Pico in Windows are not visible in WSL by
-default.  This means using serial USB (default Pico UART1 or serial to USB
-converter for Pico UART0) in WSL requires extra steps to make the USB device
-visible.  The usbipd program is used to enable USB sharing and Microsoft has
-[instructions](https://learn.microsoft.com/en-us/windows/wsl/connect-usb)
-describing the process.  The lsusb command is useful to check the results in
-Linux and can be installed in Ubuntu with the command
+In the case of the Raspberry Pi Pico, serial communication will usally
+be done through the USB interface (either using Pico libraries or external
+serial to USB converter).  Since windows USB devices are not visible in WSL
+by default, an extra program, usbipd, needs to be used in Windows to expose
+the USB device to WSL.  Microsoft has [instructions](https://learn.microsoft.com/en-us/windows/wsl/connect-usb)
+describing the process.  The lsusb command in WSL is useful to check if the
+pico has been properly exposed and can be installed with the command
 `sudo apt install usbutils`.  The Pico will show up as a **`USB Serial Device`**
-when listed with the usbipd program if the Pico is loaded with a program
-using USB serial.
+when listed with the usbipd program **IFF** the Pico is loaded with a program
+using USB serial (e.g. hello/usb from the pico-examples) and connected to
+Windows.
 
 ![USB Serial](images/USB_serial.png)
+
+Once exposed to WSL, the Pico should be shown as **`Raspberry Pi Pico`** by the
+lsusb program in WSL.
+
+![lsusb](images/lsusb.png)
 
 #### Locating the Serial Device in Linux
 The command `dmesg | grep tty` will show recent activity for serial
