@@ -96,7 +96,7 @@ file system and then reboot the Pico.
 
 ### Monitor Serial Communication
 #### USB Device Sharing
-In the case of the Raspberry Pi Pico, serial communication will usally
+In the case of the Raspberry Pi Pico, serial communication will usually
 be done through the USB interface (either using Pico libraries or external
 serial to USB converter).  Since windows USB devices are not visible in WSL
 by default, an extra program, usbipd, needs to be used in Windows to expose
@@ -127,7 +127,7 @@ group.
 
 ![Serial Device](images/serial_device.png)
 
-Adding the the user to the group (in this case dialout) is the easiest and
+Adding the user to the group (in this case dialout) is the easiest and
 safest way to grant access to the serial port.  This is done using the command
 `sudo usermod -a -G dialout $(whoami)`.  The user must log out and log back in
 for the group addition to take effect.
@@ -212,9 +212,26 @@ starting gdb, and then connecting gdb to the target.
 #### bin/pico_load
 The pico_load script will load a .elf file into the Pico
 
-    Usage: bin/pico_load [-b|--board pico|pico_w|pico2|pico2_w] <elf file>
+    usage: pico_load [-h] [-b {pico,pico_w,pico2,pico2_w}] file
+
+    Load a program into a Pico
+
+    positional arguments:
+      file                  File (ELF format) being debugged
+
+    options:
+      -h, --help            show this help message and exit
+      -b {pico,pico_w,pico2,pico2_w}, --board {pico,pico_w,pico2,pico2_w}
+                            Specify target board type (default: pico)
 
 #### bin/pico_reset
 The pico_reset script will reset the Pico
 
-    Usage: bin/pico_reset [-b|--board pico|pico_w|pico2|pico2_w]
+    usage: pico_reset [-h] [-b {pico,pico_w,pico2,pico2_w}]
+
+    Reset a Pico
+
+    options:
+      -h, --help            show this help message and exit
+      -b {pico,pico_w,pico2,pico2_w}, --board {pico,pico_w,pico2,pico2_w}
+                            Specify target board type (default: pico)
