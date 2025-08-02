@@ -1,21 +1,69 @@
 #!/bin/env python3
+"""
+Reset a Raspberry Pi Pico using OpenOCD.
+
+Original Author: John Fredine
+Original Date: May 8, 2025
+
+Copyright 2025 John Fredine
+"""
+
 import argparse
 import subprocess
 
+
 def main():
+    """Parse arguments and reset the Pico."""
     parser = argparse.ArgumentParser(description='Reset a Pico')
-    parser.add_argument("-b", "--board", default='pico',
+    parser.add_argument("-b", "--board", default=None,
                         choices=['pico', 'pico_w', 'pico2', 'pico2_w'],
                         help="Specify target board type (default: pico)")
+    parser.add_argument("-p", "--platform", default=None,
+                        choices=['rp2040', 'rp2350',
+                                 'rp2350-arm-s', 'rp2350-riscv'],
+                        help="Specify target platform type (default: rp2040)")
     args = parser.parse_args()
 
-    if (args.board == "pico") or (args.board == "pico_w"):
-        chip = "rp2040"
+    # set defaults for board and platform
+    if args.board is None and args.platform is None:
+        platform = 'rp2040'
+        board = 'pico'
+    elif args.board is None:
+        platform = args.platform
+        if platform == 'rp2040':
+            board = 'pico'
+        else:
+            board = 'pico2'
+    elif args.platform is None:
+        board = args.board
+        if board in ('pico', 'pico_w'):
+            platform = 'rp2040'
+        else:
+            platform = 'rp2350'
     else:
-        chip = "rp2350"
+        platform = args.platform
+        board = args.board
+
+    if platform == 'rp2350-arm-s':
+        platform = 'rp2350'
+
+    # check that options are valid
+    if board in ('pico', 'pico_w'):
+        if platform in ('rp2350', 'rp2350-riscv'):
+            raise RuntimeError("Illegal combination of board "
+                               + f"({args.board}) "
+                               + f"and platform ({args.platform})")
+    else:
+        if platform == 'rp2040':
+            raise RuntimeError("Illegal combination of board "
+                               + f"({args.board}) "
+                               + f"and platform ({args.platform})")
 
     subprocess.run(["openocd", "-f", "interface/cmsis-dap.cfg", "-f",
-                    f"target/{chip}.cfg", "-c", "init; reset; exit"])
+                    f"target/{platform}.cfg", "-c", "adapter speed 5000",
+                    "-c", "init; reset; exit"],
+                   check=True)
+
 
 if __name__ == "__main__":
     main()

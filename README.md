@@ -49,21 +49,21 @@ From within the WSL environment execute the following commands:
 
 ### Install the Raspberry Pi Pico SDK
 To do C/C++ development for the Raspberry Pi Pico a minimum of four tool suites
-are needed:
+are needed along with two possible optional components:
 
 1. The [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 2. The [Raspberry Pi Pico SDK](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 3. The [Raspberry Pi picotool program](https://github.com/raspberrypi/picotool.git)
 4. [CMake](https://cmake.org)
+5. Optionally install the [Raspberry Pi Pico examples](https://github.com/raspberrypi/pico-examples.git)
+6. Optionally install the [RISC-V Toolchain]()
 
-Additionally it is a good idea to download the
-[Raspberry Pi Pico examples](https://github.com/raspberrypi/pico-examples.git)
-to test the environment.
-
-The utils/pico_sdk script will download, compile, and install all of these
-tools and download the examples.  The script must be run as root in order to do
-the installs.  E.g. `sudo wsl_pico_setup/utils/pico_sdk`.  All sources for the
-tools and examples can be found in /usr/src.
+The utils/pico_sdk script will install all of these suites.  The RISC-V GNU tool
+can take significant time to compile and since many (most?) users are only
+interested in the ARM cores, this step is skipped unless the --riscv switch is
+used.  The script must be run as root in order to do the installs.
+E.g. `sudo wsl_pico_setup/utils/pico_sdk`.  All sources for the tools and
+examples can be found in /usr/src.
 
 ### Build the Raspberry Pi Pico Examples
 The build environment for the examples is created using cmake.  A typical
@@ -197,7 +197,7 @@ been setup.
 The pico_debug script takes care of the tedious process of starting OpenOCD,
 starting gdb, and then connecting gdb to the target.
 
-    usage: pico_debug [-h] [-b {pico,pico_w,pico2,pico2_w}] file
+    usage: pico_debug [-h] [-b {pico,pico_w,pico2,pico2_w}] [-p {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}] [--gdb GDB] file
 
     Start debugging a raspbery pi pico
 
@@ -207,27 +207,28 @@ starting gdb, and then connecting gdb to the target.
     options:
       -h, --help            show this help message and exit
       -b {pico,pico_w,pico2,pico2_w}, --board {pico,pico_w,pico2,pico2_w}
-                            Specify target board type
+                            Specify target board type (default: pico)
+      -p {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}, --platform {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}
+                            Specify target platform type (default: rp2040)
+      --gdb GDB             Specify gdb binary to use
 
 #### bin/pico_load
-The pico_load script will load a .elf file into the Pico
-
-    usage: pico_load [-h] [-b {pico,pico_w,pico2,pico2_w}] file
+    usage: pico_load [-h] [-b {pico,pico_w,pico2,pico2_w}] [-p {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}] file
 
     Load a program into a Pico
 
     positional arguments:
-      file                  File (ELF format) being debugged
+      file                  File (ELF format) to load
 
     options:
       -h, --help            show this help message and exit
       -b {pico,pico_w,pico2,pico2_w}, --board {pico,pico_w,pico2,pico2_w}
                             Specify target board type (default: pico)
+      -p {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}, --platform {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}
+                            Specify target platform type (default: rp2040)
 
 #### bin/pico_reset
-The pico_reset script will reset the Pico
-
-    usage: pico_reset [-h] [-b {pico,pico_w,pico2,pico2_w}]
+    usage: pico_reset [-h] [-b {pico,pico_w,pico2,pico2_w}] [-p {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}]
 
     Reset a Pico
 
@@ -235,3 +236,5 @@ The pico_reset script will reset the Pico
       -h, --help            show this help message and exit
       -b {pico,pico_w,pico2,pico2_w}, --board {pico,pico_w,pico2,pico2_w}
                             Specify target board type (default: pico)
+      -p {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}, --platform {rp2040,rp2350,rp2350-arm-s,rp2350-riscv}
+                            Specify target platform type (default: rp2040)

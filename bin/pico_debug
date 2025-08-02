@@ -1,64 +1,142 @@
 #!/bin/env python3
+"""
+Debug a program on a Raspberry Pi Pico.
+
+Original Author: John Fredine
+Original Date: May 8, 2025
+
+Copyright 2025 John Fredine
+"""
+
 import argparse
-import re
 import os
+import re
+import signal
 import subprocess
 import sys
-import time
 import tempfile
-import signal
+import time
 
-GDB = "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gdb"
 
-def main():
-    parser = argparse.ArgumentParser(description='Start debugging a raspbery pi pico')
-    parser.add_argument("file", help="File (ELF format) being debugged")
-    parser.add_argument("-b", "--board", default='pico',
-                        choices=['pico', 'pico_w', 'pico2', 'pico2_w'],
-                        help="Specify target board type (default: pico)")
-    args = parser.parse_args()
+def launch_debug(platform, gdb, elf_file):
+    """
+    Start the debugger and attach it to the process.
 
-    if (args.board == "pico") or (args.board == "pico_w"):
-        chip = "rp2040"
-    else:
-        chip = "rp2350"
-
+    This routine handles all the tedious work.  It starts OpenOCD and
+    determines which port it is using.  It then starts gdb and issues the
+    necessary commands to connect to OpenOCD and reset execution.
+    """
     p = subprocess.Popen(["openocd", "-s",  "tcl",
                           "-f", "interface/cmsis-dap.cfg",
-                          "-f", f"target/{chip}.cfg",
-                          "-c", "adapter speed 5000"], text=True,
-                          start_new_session=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                          "-f", f"target/{platform}.cfg",
+                          "-c", "adapter speed 5000"],
+                         text=True, start_new_session=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     time.sleep(0.5)
     if p.poll() is not None:
         sys.stdout.write(p.stdout.read())
-        raise Exception("Unable to start openocd")
+        raise RuntimeError("Unable to start openocd")
 
     port = None
     port_re = re.compile(r".*Listening on port (\d+) for gdb connections")
+    stdout = ""
     for line in p.stdout:
+        stdout = stdout + line
         match = port_re.match(line)
         if match is not None:
-            print(f"Port is {match.group(1)}")
             port = int(match.group(1))
             break
 
-    if (port is None):
-        raise Exception("Unable to determine port")
+    if port is None:
+        for line in stdout:
+            sys.stdout.write(line)
+        p.kill()
+        p.wait()
+        raise RuntimeError("Unable to determine port")
 
     f = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8',
                                     delete=False, delete_on_close=False)
     fn = f.name
     f.write(f"target remote localhost:{port}\n")
-    f.write(f"monitor reset init\n")
+    f.write("monitor reset init\n")
     f.close()
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    subprocess.run([GDB, "--command", fn, args.file])
+    subprocess.run([gdb, "--command", fn, elf_file], check=False)
 
-    p.kill();
-    p.wait();
+    p.kill()
+    p.wait()
     os.unlink(fn)
-                   
+
+
+def main():
+    """Parse arguments and call the debugger."""
+    parser = argparse.ArgumentParser(description='Start debugging a raspbery pi pico')
+    parser.add_argument("file", help="File (ELF format) being debugged")
+    parser.add_argument("-b", "--board", default=None,
+                        choices=['pico', 'pico_w', 'pico2', 'pico2_w'],
+                        help="Specify target board type (default: pico)")
+    parser.add_argument("-p", "--platform", default=None,
+                        choices=['rp2040', 'rp2350',
+                                 'rp2350-arm-s', 'rp2350-riscv'],
+                        help="Specify target platform type (default: rp2040)")
+    parser.add_argument("--gdb", default=None,
+                        help="Specify gdb binary to use")
+    args = parser.parse_args()
+
+    # set defaults for board and platform
+    if args.board is None and args.platform is None:
+        platform = 'rp2040'
+        board = 'pico'
+    elif args.board is None:
+        platform = args.platform
+        if platform == 'rp2040':
+            board = 'pico'
+        else:
+            board = 'pico2'
+    elif args.platform is None:
+        board = args.board
+        if board in ('pico', 'pico_w'):
+            platform = 'rp2040'
+        else:
+            platform = 'rp2350'
+    else:
+        platform = args.platform
+        board = args.board
+
+    if platform == 'rp2350-arm-s':
+        platform = 'rp2350'
+
+    # check that options are valid
+    if board in ('pico', 'pico_w'):
+        if platform in ('rp2350', 'rp2350-riscv'):
+            raise RuntimeError("Illegal combination of board "
+                               + f"({args.board}) "
+                               + f"and platform ({args.platform})")
+    else:
+        if platform == 'rp2040':
+            raise RuntimeError("Illegal combination of board "
+                               + f"({args.board}) "
+                               + f"and platform ({args.platform})")
+
+    # check that gdb is valid
+    if args.gdb is None:
+        if platform == 'rp2350-riscv':
+            gdb = "/opt/gcc-riscv32-unknown-elf/bin/riscv32-unknown-elf-gdb"
+        else:
+            gdb = "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gdb"
+        if not os.path.exists(gdb):
+            raise RuntimeError(f"Default debugger ({gdb}) not found."
+                               + "   Use --gdb option to specify a "
+                               + "different location")
+    else:
+        gdb = args.gdb
+
+    if not os.path.exists(args.file):
+        raise RuntimeError(f"{args.file} does not exist")
+
+    launch_debug(platform, gdb, args.file)
+
+
 if __name__ == "__main__":
     main()

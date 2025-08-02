@@ -39,11 +39,10 @@ apt-get install -y git libtool pkg-config make libusb-1.0.0-dev
 # install openocd
 cd /usr/src
 rm -rf openocd
-git clone https://github.com/raspberrypi/openocd.git
+git clone -b sdk-2.2.0 https://github.com/raspberrypi/openocd.git
 cd openocd
-git checkout
-./bootstrap
-./configure --disable-werror
+./bootstrap with-submodules
+./configure --disable-werror --enable-internal-jimtcl
 make -j$(nproc)
 make install
 
