@@ -8,9 +8,9 @@ steep, but the reward is well worth it.
 While using Linux can be very productive, it may not be suited for all
 compute tasks.  Windows is ubiquitous in the PC world and with its many
 programs and utilities it may be impossible or at least very difficult
-to replace it completely.  This is where the Windows Linux Subsystem
-comes into the picture.  It allows you to run Linux inside Windows giving
-you the best of both worlds.
+to replace it completely.  This is where the Windows Subsystem for Linux (WSL)
+comes into play.  It allows you to run Linux inside Windows providing
+the best of both worlds.
 
 ## Enabling WSL
 There are plenty of resources on the web describing how to enable WSL so
@@ -63,7 +63,7 @@ can take significant time to compile and since many (most?) users are only
 interested in the ARM cores, this step is skipped unless the --riscv switch is
 used.  The script must be run as root in order to do the installs.
 E.g. `sudo wsl_pico_setup/utils/pico_sdk`.  All sources for the tools and
-examples can be found in /usr/src.
+examples can be found in /usr/local/src.
 
 ### Build the Raspberry Pi Pico Examples
 The build environment for the examples is created using cmake.  A typical
@@ -72,7 +72,7 @@ command sequence might look like:
 - `mkdir build`
 - `cd build`
 - `export PICO_SDK_PATH=/opt/pico-sdk`
-- `cmake -DPICO_BOARD=pico /usr/src/pico-examples  # adjust board type to pico_w, pico2, or pico2_w if necessary`
+- `cmake -DPICO_BOARD=pico /usr/local/src/pico-examples  # adjust board type to pico_w, pico2, or pico2_w if necessary`
 
 Any of the examples can now be compiled by changing to the example directory
 within the build area and running Make.  The simplest example is blink and it 

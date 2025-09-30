@@ -6,11 +6,6 @@
 # Original Date: March 18, 2025
 #
 
-if [[ $USER != "root" ]]; then
-    echo "!Error: Script must run as \"sudo $0\""
-    exit 1
-fi
-
 install_riscv=0
 usage="Usage: $0 [--riscv|-v] [--help|-h]"
 while [[ $# -gt 0 ]]; do
@@ -32,7 +27,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-mkdir -p /usr/src
+if [[ $USER != "root" ]]; then
+    echo "!Error: Script must run as \"sudo $0\""
+    exit 1
+fi
+
+mkdir -p /usr/local/src
 
 # get latest list of available tools
 apt update
@@ -44,7 +44,7 @@ apt-get install -y picocom tmux
 apt-get install -y build-essential curl
 
 # install ARM toolchain
-cd /usr/src
+cd /usr/local/src
 arm_url="https://developer.arm.com"
 version=$(curl -s ${arm_url}/downloads/-/arm-gnu-toolchain-downloads |\
               grep -Po '<h4>Version \K.+(?=</h4>)')
@@ -68,7 +68,7 @@ if [[ $install_riscv -eq 1 ]]; then
     # install RISC-V toolchain
     riscv_install_dir=/opt/gcc-riscv32-unknown-elf
     mkdir -p $riscv_install_dir
-    cd /usr/src
+    cd /usr/local/src
     git clone https://github.com/riscv/riscv-gnu-toolchain
     cd riscv-gnu-toolchain
     git clone https://github.com/gcc-mirror/gcc gcc-14 -b releases/gcc-14
@@ -95,7 +95,7 @@ export PICO_SDK_PATH=/opt/pico-sdk
 apt-get install -y git cmake g++
 
 # install picotool
-cd /usr/src
+cd /usr/local/src
 rm -rf picotool
 git clone --recurse-submodules -b 2.1.1 \
     https://github.com/raspberrypi/picotool.git
@@ -106,7 +106,7 @@ make
 make install
 
 # install pico examples
-cd /usr/src
+cd /usr/local/src
 rm -rf pico-examples
 git clone -b sdk-2.1.1 https://github.com/raspberrypi/pico-examples.git
 

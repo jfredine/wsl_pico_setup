@@ -28,7 +28,7 @@ if [[ "X$PICO_SDK_PATH" == "X" ]]; then
     fi
 fi
 
-mkdir -p /usr/src
+mkdir -p /usr/local/src
 
 # get latest list of available tools
 apt update
@@ -37,7 +37,7 @@ apt update
 apt-get install -y git libtool pkg-config make libusb-1.0.0-dev
 
 # install openocd
-cd /usr/src
+cd /usr/local/src
 rm -rf openocd
 git clone -b sdk-2.2.0 https://github.com/raspberrypi/openocd.git
 cd openocd
@@ -52,7 +52,7 @@ udevadm control --reload
 usermod -a -G plugdev $(whoami)
 
 # clone and build the debugprobe firmware
-cd /usr/src
+cd /usr/local/src
 rm -rf debugprobe
 git clone -b debugprobe-v2.2.2 https://github.com/raspberrypi/debugprobe.git
 cd debugprobe
