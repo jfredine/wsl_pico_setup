@@ -65,6 +65,13 @@ if [[ $install_riscv -eq 1 ]]; then
                        patchutils bc zlib1g-dev libexpat-dev \
                        ninja-build git cmake libglib2.0-dev libslirp-dev
 
+    # Using the default gcc under Ubuntu 24.04 (version 13) showed some
+    # errors which did not appear to be critical, but also did not happen
+    # when compiling with GCC 14, so install GCC 14 and make it the default
+    apt-get install -y gcc-14 gcc-13
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 50
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 40
+
     # install RISC-V toolchain
     riscv_install_dir=/opt/gcc-riscv32-unknown-elf
     mkdir -p $riscv_install_dir
